@@ -1,7 +1,13 @@
-package com.example.a3dsinputredirection
+package com.example.cemuhookcellphonecontroller
 
 import android.content.SharedPreferences
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -12,14 +18,29 @@ import android.widget.Button
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
-import com.example.a3dsinputredirection.databinding.ActivityMainBinding
+import com.example.cemuhookcellphonecontroller.databinding.ActivityMainBinding
 import com.google.android.material.materialswitch.MaterialSwitch
+import java.net.Inet4Address
+import java.net.NetworkInterface
+import kotlin.math.PI
 
-class MainActivity : AppCompatActivity(), TouchPadView.Listener, JoystickView.Listener {
+class MainActivity : AppCompatActivity(), TouchPadView.Listener, JoystickView.Listener, SensorEventListener {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: SharedPreferences
     private lateinit var client: InputRedirectionClient
+    private lateinit var sensorManager: SensorManager
+    private var accelerometer: Sensor? = null
+    private var gyroscope: Sensor? = null
+    private val latestAccel = FloatArray(3)
+    private val latestGyroDps = FloatArray(3)
+    private val uiHandler = Handler(Looper.getMainLooper())
+    private val statusTicker = object : Runnable {
+        override fun run() {
+            updateStatus()
+            uiHandler.postDelayed(this, 1000L)
+        }
+    }
 
     private var config: InputRedirectionConfig = InputRedirectionConfig()
 
@@ -32,6 +53,9 @@ class MainActivity : AppCompatActivity(), TouchPadView.Listener, JoystickView.Li
         prefs = getSharedPreferences("input_redirection", MODE_PRIVATE)
         config = InputRedirectionConfig.load(prefs)
         client = InputRedirectionClient { config.copy() }
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
 
         setupTabs()
         binding.touchPad.listener = this
@@ -45,6 +69,8 @@ class MainActivity : AppCompatActivity(), TouchPadView.Listener, JoystickView.Li
 
     override fun onStart() {
         super.onStart()
+        uiHandler.post(statusTicker)
+        registerImuSensors()
         if (binding.sendSwitch.isChecked) {
             client.start()
             updateStatus()
@@ -53,9 +79,43 @@ class MainActivity : AppCompatActivity(), TouchPadView.Listener, JoystickView.Li
 
     override fun onStop() {
         super.onStop()
+        uiHandler.removeCallbacks(statusTicker)
+        sensorManager.unregisterListener(this)
         client.stop()
         updateStatus()
     }
+
+    override fun onSensorChanged(event: SensorEvent) {
+        when (event.sensor.type) {
+            Sensor.TYPE_ACCELEROMETER -> {
+                latestAccel[0] = event.values[0]
+                latestAccel[1] = event.values[1]
+                latestAccel[2] = event.values[2]
+            }
+
+            Sensor.TYPE_GYROSCOPE -> {
+                val radToDeg = (180.0 / PI).toFloat()
+                latestGyroDps[0] = event.values[0] * radToDeg
+                latestGyroDps[1] = event.values[1] * radToDeg
+                latestGyroDps[2] = event.values[2] * radToDeg
+            }
+
+            else -> return
+        }
+
+        val gravity = SensorManager.GRAVITY_EARTH
+        client.updateImu(
+            accelXg = latestAccel[0] / gravity,
+            accelYg = latestAccel[1] / gravity,
+            accelZg = latestAccel[2] / gravity,
+            gyroPitchDps = latestGyroDps[0],
+            gyroYawDps = latestGyroDps[1],
+            gyroRollDps = latestGyroDps[2],
+            timestampMicros = event.timestamp / 1_000L,
+        )
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 
     override fun onTouchState(active: Boolean, x: Int, y: Int) {
         client.updateTouch(active, x, y)
@@ -129,12 +189,12 @@ class MainActivity : AppCompatActivity(), TouchPadView.Listener, JoystickView.Li
         }
 
         binding.cpadBoundInput.doAfterTextChanged {
-            config.cpadBound = it?.toString()?.toIntOrNull()?.coerceIn(1, 4095) ?: 1488
+            config.cpadBound = it?.toString()?.toIntOrNull()?.coerceIn(10, 200) ?: 100
             persistConfig()
         }
 
         binding.cppBoundInput.doAfterTextChanged {
-            config.cppBound = it?.toString()?.toIntOrNull()?.coerceIn(1, 255) ?: 127
+            config.cppBound = it?.toString()?.toIntOrNull()?.coerceIn(10, 200) ?: 100
             persistConfig()
         }
 
@@ -283,9 +343,38 @@ class MainActivity : AppCompatActivity(), TouchPadView.Listener, JoystickView.Li
     }
 
     private fun updateStatus() {
-        val ip = config.targetIp.ifBlank { "(no IP)" }
-        val status = if (client.isRunning()) "Sending" else "Paused"
-        binding.statusText.text = "$status -> $ip:4950"
+        val ip = config.targetIp.ifBlank { "all clients" }
+        val localIp = getLocalIpv4Address()
+        val status = if (client.isRunning()) "DSU running" else "DSU paused"
+        val subscribers = client.activeSubscribers()
+        binding.statusText.text = "$status | phone: $localIp | $subscribers subs | filter: $ip | :26760"
+    }
+
+    private fun registerImuSensors() {
+        accelerometer?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
+        }
+        gyroscope?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
+        }
+    }
+
+    private fun getLocalIpv4Address(): String {
+        return runCatching {
+            NetworkInterface.getNetworkInterfaces()
+                .toList()
+                .asSequence()
+                .filter { it.isUp && !it.isLoopback }
+                .flatMap { it.inetAddresses.toList().asSequence() }
+                .filterIsInstance<Inet4Address>()
+                .map { it.hostAddress ?: "" }
+                .firstOrNull { addr ->
+                    addr.isNotBlank() &&
+                        !addr.startsWith("127.") &&
+                        !addr.startsWith("169.254.")
+                }
+                ?: "not found"
+        }.getOrDefault("not found")
     }
 
     private fun isGamepadSource(event: KeyEvent): Boolean {

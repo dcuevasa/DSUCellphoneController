@@ -1,4 +1,4 @@
-package com.example.a3dsinputredirection
+package com.example.cemuhookcellphonecontroller
 
 import org.junit.Test
 

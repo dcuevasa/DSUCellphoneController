@@ -27,7 +27,7 @@
             android:id="@+id/sendSwitch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Send UDP" />
+            android:text="Run DSU Server" />
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButtonToggleGroup
@@ -198,7 +198,7 @@
                     android:layout_marginEnd="6dp"
                     android:orientation="vertical">
 
-                    <com.example.a3dsinputredirection.TouchPadView
+                    <com.example.cemuhookcellphonecontroller.TouchPadView
                         android:id="@+id/touchPad"
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
@@ -224,7 +224,7 @@
                             android:layout_height="38dp"
                             android:layout_marginStart="6dp"
                             android:layout_weight="1"
-                            android:text="POWER" />
+                            android:text="TOUCH" />
 
                         <Button
                             android:id="@+id/btnPowerLong"
@@ -232,7 +232,7 @@
                             android:layout_height="38dp"
                             android:layout_marginStart="6dp"
                             android:layout_weight="1"
-                            android:text="PWR LONG" />
+                            android:text="GUIDE" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -316,7 +316,7 @@
                 android:layout_marginTop="6dp"
                 android:orientation="horizontal">
 
-                <com.example.a3dsinputredirection.JoystickView
+                <com.example.cemuhookcellphonecontroller.JoystickView
                     android:id="@+id/leftStick"
                     android:layout_width="0dp"
                     android:layout_height="108dp"
@@ -326,7 +326,7 @@
                     android:layout_width="8dp"
                     android:layout_height="1dp" />
 
-                <com.example.a3dsinputredirection.JoystickView
+                <com.example.cemuhookcellphonecontroller.JoystickView
                     android:id="@+id/rightStick"
                     android:layout_width="0dp"
                     android:layout_height="108dp"
@@ -352,7 +352,7 @@
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="3DS IP address">
+                    android:hint="Emulator IP filter (optional)">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/ipInput"
@@ -366,7 +366,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Ranges"
+                    android:text="Stick sensitivity (%)"
                     android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                     android:textStyle="bold" />
 
@@ -381,7 +381,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:hint="CPAD">
+                        android:hint="Left stick %">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/cpadBoundInput"
@@ -396,7 +396,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
-                        android:hint="CPP">
+                        android:hint="Right stick %">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/cppBoundInput"
@@ -418,13 +418,13 @@
                     android:id="@+id/checkInvertY"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Invert Y (Circle Pad)" />
+                    android:text="Invert Y (Left stick)" />
 
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/checkInvertCppY"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Invert Y (C-Stick)" />
+                    android:text="Invert Y (Right stick)" />
 
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/checkSwapSticks"
@@ -436,7 +436,7 @@
                     android:id="@+id/checkDisableC"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Disable C-Stick" />
+                    android:text="Disable right stick" />
 
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/checkRsDpad"

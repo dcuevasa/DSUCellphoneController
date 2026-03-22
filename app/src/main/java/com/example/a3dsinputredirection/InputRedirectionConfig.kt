@@ -1,12 +1,12 @@
-package com.example.a3dsinputredirection
+package com.example.cemuhookcellphonecontroller
 
 import android.content.SharedPreferences
 import android.view.KeyEvent
 
 data class InputRedirectionConfig(
     var targetIp: String = "",
-    var cpadBound: Int = 1488,
-    var cppBound: Int = 127,
+    var cpadBound: Int = 100,
+    var cppBound: Int = 100,
     var invertY: Boolean = false,
     var invertCppY: Boolean = false,
     var swapSticks: Boolean = false,
@@ -68,8 +68,8 @@ data class InputRedirectionConfig(
         fun load(prefs: SharedPreferences): InputRedirectionConfig {
             return InputRedirectionConfig(
                 targetIp = prefs.getString("targetIp", "") ?: "",
-                cpadBound = prefs.getInt("cpadBound", 1488),
-                cppBound = prefs.getInt("cppBound", 127),
+                cpadBound = prefs.getInt("cpadBound", 100),
+                cppBound = prefs.getInt("cppBound", 100),
                 invertY = prefs.getBoolean("invertY", false),
                 invertCppY = prefs.getBoolean("invertCppY", false),
                 swapSticks = prefs.getBoolean("swapSticks", false),

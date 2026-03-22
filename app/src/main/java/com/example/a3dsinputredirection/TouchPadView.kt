@@ -1,4 +1,4 @@
-package com.example.a3dsinputredirection
+package com.example.cemuhookcellphonecontroller
 
 import android.content.Context
 import android.graphics.Canvas

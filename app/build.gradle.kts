@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.a3dsinputredirection"
+    namespace = "com.example.cemuhookcellphonecontroller"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.example.a3dsinputredirection"
+        applicationId = "com.example.cemuhookcellphonecontroller"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

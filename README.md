@@ -1,123 +1,81 @@
-# 3DS Input Redirection (Android)
+# CemuHook Phone Controller (Android)
 
-Android client for Luma3DS Rosalina InputRedirection.
+This project keeps the original 3dsInputRedirection UI concept, but the network layer was fully converted into a generic DSU/CemuHook server.
 
-This app turns your phone into a virtual controller and sends input frames over UDP to your Nintendo 3DS.
+## Current Features
 
-## What This Project Does
+- Runs a DSU server over UDP on port `26760`.
+- Handles core DSU messages:
+- `0x100000` (protocol version)
+- `0x100001` (controller info)
+- `0x100002` (data subscription)
+- Exposes one virtual controller compatible with DSU clients.
+- Sends on-screen input and physical Android gamepad input:
+- Digital buttons
+- Analog sticks
+- Analog trigger pressure bytes
+- Touchpad packet data
+- Sends phone IMU data through DSU:
+- Accelerometer (in g)
+- Gyroscope (in deg/s)
 
-- Sends controller input to a 3DS running Luma3DS InputRedirection.
-- Uses UDP on port `4950`.
-- Sends full 20-byte frames (`hid_pad`, `touch`, `circle_pad`, `cpp_ir`, `special`).
-- Supports on-screen controls and physical gamepad input.
+## Quick Start
 
-Main control features in the app:
+1. Install and open the app on your Android phone.
+2. Enable `Run DSU Server`.
+3. (Optional) Set `Emulator IP filter` to accept only one client IP.
+4. In your emulator, configure DSU/CemuHook using your phone IP and port `26760`.
+5. Use the `Control` tab to test inputs.
 
-- Left and right virtual sticks.
-- D-Pad.
-- Face buttons (A/B/X/Y mapped from the UI layout).
-- Shoulder buttons (`L` / `R`).
-- `Select` and `Start`.
-- `Home`, `Power`, `Power Long`.
-- Central touchpad mapped to 3DS touchscreen coordinates.
+## UI and Status
 
-## Requirements
+- The top status bar shows:
+- DSU server state
+- Phone local IP
+- Active subscriber count
+- Optional IP filter
+- Port
+- Subscriber count refreshes continuously while the activity is visible.
 
-- Nintendo 3DS with Luma3DS and Rosalina InputRedirection available.
-- Android device (min SDK 24, Android 7.0+).
-- Phone and 3DS on the same local network.
+## Motion (IMU) Details
 
-## Quick Start (Use Prebuilt APK)
+- Accelerometer and gyroscope are sampled from Android sensors.
+- Accelerometer values are normalized to g using `SensorManager.GRAVITY_EARTH`.
+- Gyroscope values are converted from rad/s to deg/s.
+- Motion values use deadzone and clamp filtering to reduce drift/noise.
 
-If you only want to use the app, install the APK from Releases.
+## Notes About Cemu 2
 
-- Releases APK: link coming soon (I will add it later).
+- DSU connectivity in Cemu 2 can work while some input types are not exposed the same way as in DSU test tools.
+- In practice, DSU is most consistently used for motion data in Cemu.
+- Touchpad data can appear in DSU test utilities but may not be mapped as a gameplay input in all Cemu versions/profiles.
+- If needed, keep gameplay buttons/sticks mapped in Cemu's main input source and use DSU primarily for motion.
 
-Steps:
+## Configuration Notes
 
-1. Download the latest APK from Releases.
-2. Install it on your Android device.
-3. Open the app.
-4. Go to `Options` and set your 3DS IP address.
-5. Return to `Control` and enable `Send UDP`.
-6. Use the on-screen controller.
+- `Left stick %` and `Right stick %` are sensitivity multipliers (`10..200`, default `100`).
+- `Power` is mapped as DSU touch button.
+- `Power Long` is mapped as guide/home compatibility behavior.
+- Use `Invert Y` options if an emulator profile expects opposite axis direction.
 
-## How To Use With Your 3DS
+## Main Files
 
-1. Boot your 3DS with Luma3DS.
-2. Ensure InputRedirection is enabled on the 3DS side (Rosalina).
-3. Make sure your phone and 3DS are on the same Wi-Fi network.
-4. In the app, set the target 3DS IP.
-5. Toggle `Send UDP` on.
-6. Test buttons, sticks, and touchpad.
+- `app/src/main/java/com/example/cemuhookcellphonecontroller/MainActivity.kt`
+- `app/src/main/java/com/example/cemuhookcellphonecontroller/InputRedirectionClient.kt`
+- `app/src/main/java/com/example/cemuhookcellphonecontroller/InputRedirectionConfig.kt`
+- `app/src/main/res/layout/activity_main.xml`
+- `app/src/main/res/layout-land/activity_main.xml`
 
-## Controls and Options
+## Build
 
-The app has two views:
-
-- `Control`: full virtual gamepad UI for gameplay.
-- `Options`: networking and behavior settings.
-
-Options include:
-
-- 3DS IP address.
-- Circle Pad and C-Stick range bounds.
-- Invert/swap stick behaviors.
-- Optional right-stick remapping (D-Pad, ABXY, Smash mode).
-- Button mapping to Android gamepad key codes.
-
-## Import and Modify in Android Studio
-
-### 1. Open the project
-
-1. Open Android Studio.
-2. Select `Open`.
-3. Choose this folder:
-
-	 `3dsInputRedirection/`
-
-4. Let Gradle sync finish.
-
-### 2. Build and run
-
-1. Connect an Android device (or use an emulator).
-2. Select the `app` run configuration.
-3. Click `Run`.
-
-Or from terminal:
-
-```bash
-./gradlew :app:assembleDebug
-```
-
-On Windows:
+Windows:
 
 ```bat
 gradlew.bat :app:assembleDebug
 ```
 
-### 3. Generate a release APK
+Linux/macOS:
 
-In Android Studio:
-
-1. `Build` -> `Generate Signed Bundle / APK`.
-2. Choose `APK`.
-3. Use your keystore to sign the release build.
-
-### 4. Where to edit common parts
-
-- Main UI logic: `app/src/main/java/com/example/a3dsinputredirection/MainActivity.kt`
-- UDP protocol and frame packing: `app/src/main/java/com/example/a3dsinputredirection/InputRedirectionClient.kt`
-- Touchpad view and touch mapping: `app/src/main/java/com/example/a3dsinputredirection/TouchPadView.kt`
-- Virtual stick view: `app/src/main/java/com/example/a3dsinputredirection/JoystickView.kt`
-- Portrait layout: `app/src/main/res/layout/activity_main.xml`
-- Landscape layout: `app/src/main/res/layout-land/activity_main.xml`
-- Config model/persistence: `app/src/main/java/com/example/a3dsinputredirection/InputRedirectionConfig.kt`
-
-## Protocol Reference
-
-For protocol details, see:
-
-- `input_redirection_docs.md`
-
-This app uses little-endian 20-byte UDP frames compatible with Rosalina InputRedirection.
+```bash
+./gradlew :app:assembleDebug
+```

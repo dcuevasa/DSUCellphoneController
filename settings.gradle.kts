@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "3dsInputRedirection"
+rootProject.name = "CemuHookCellphoneController"
 include(":app")
